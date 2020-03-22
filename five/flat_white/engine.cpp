@@ -30,7 +30,7 @@ Engine::Engine(QObject *parent)
     , processing_(false) {
     five_prepare([](std::size_t t) {
         qDebug() << "games[" << ++counter__ << "]:" << t;
-    }, 200000, 20);
+    }, 500000, 20);
     five_start_game();
 }
 

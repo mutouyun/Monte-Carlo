@@ -8,6 +8,12 @@
 #include "def.h"
 #include "coord.h"
 
+namespace {
+
+
+
+} // namespace
+
 class board {
     piece_t next_pie_ = Black;
     std::size_t set_count_ = 0;

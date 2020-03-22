@@ -50,14 +50,14 @@ struct st_node {
 
 namespace {
 
-double score(st_node const * p, st_node const * x) noexcept {
+double score(st_node const * p, st_node const * x) noexcept { // UCB
     double log_Np = std::log(double(p->visits()));
     double     Nx =          double(x->visits());
     return x->rate() + std::sqrt(2 * log_Np / Nx);
 }
 
 template <typename C>
-double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept { // UCT
+double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept {
     double rs = 0.0;
     for (auto & it : p->next_) {
         double s = score(p, it.second);
@@ -70,7 +70,7 @@ double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept { // UCT
 }
 
 template <typename Q, typename C>
-double highest_scores(st_node const * p, Q& que, C&& cmp) noexcept { // UCT
+double highest_scores(st_node const * p, Q& que, C&& cmp) noexcept {
     double rs = 0.0;
     for (auto & it : p->next_) {
         double s = score(p, it.second);

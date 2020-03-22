@@ -8,6 +8,10 @@ MouseArea {
 
         property var line: []
 
+        readonly property var letters: [
+            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'
+        ]
+
         function pos2coord(x) {
             var k = width / 15
             return Math.round((x - k / 2) / k)
@@ -36,11 +40,12 @@ MouseArea {
     Canvas {
         id: canvas
         anchors.fill: parent
-        antialiasing: false
 
         onPaint: {
             var ctx = getContext("2d")
             var k = width / 15, w = width - k
+
+            /* fill background */
 
             ctx.beginPath()
             ctx.rect(0, 0, width, width)
@@ -49,9 +54,14 @@ MouseArea {
             ctx.fillStyle = "white"
             ctx.fill()
 
+            /* draw border */
+
+            ctx.translate(0.5, 0.5)
             ctx.beginPath()
             ctx.rect(k / 2, k / 2, w, w)
             ctx.closePath()
+
+            /* draw lines */
 
             for (var i = 1; i < 14; ++i) {
                 ctx.moveTo(k / 2, k / 2 + i * k)
@@ -64,9 +74,11 @@ MouseArea {
 
             ctx.strokeStyle = 'black'
             ctx.lineWidth = 1
-
             ctx.fill()
             ctx.stroke()
+            ctx.translate(-0.5, -0.5)
+
+            /* draw stars */
 
             ctx.beginPath()
             ctx.arc((k + w) / 2, (k + w) / 2, 5, 0, Math.PI * 2)
@@ -74,6 +86,33 @@ MouseArea {
 
             ctx.fillStyle = "black"
             ctx.fill()
+
+            ctx.beginPath()
+            ctx.arc( 3.5 * k,  3.5 * k, 4, 0, Math.PI * 2)
+            ctx.arc(11.5 * k,  3.5 * k, 4, 0, Math.PI * 2)
+            ctx.closePath()
+            ctx.fill()
+
+            ctx.beginPath()
+            ctx.arc( 3.5 * k, 11.5 * k, 4, 0, Math.PI * 2)
+            ctx.arc(11.5 * k, 11.5 * k, 4, 0, Math.PI * 2)
+            ctx.closePath()
+            ctx.fill()
+
+            /* draw coordinate texts */
+
+            ctx.font="14px Arial"
+            ctx.textAlign = "center"
+            ctx.textBaseline = "middle"
+
+            for (i = 0; i < 15; ++i) {
+                ctx.fillText(__.letters[i], k / 2 + i * k, k / 4)
+            }
+            for (i = 0; i < 15; ++i) {
+                ctx.fillText(i + 1, k / 4, k / 2 + i * k)
+            }
+
+            /* draw pieces */
 
             for (i = 0; i < __.line.length; i += 2) {
                 ctx.beginPath()
