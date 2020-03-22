@@ -22,7 +22,7 @@ board board__;
 layer all__ { *(new pool<st_node>) };
 std::mutex lc_all__;
 
-std::size_t limit__ = -1, timeout__ = 30;
+std::size_t limit__ = std::size_t(-1), timeout__ = 30;
 call_t call__ = nullptr;
 void * p__ = nullptr;
 
@@ -34,11 +34,6 @@ auto& random_engine() {
 std::size_t random(std::size_t b, std::size_t e) {
     // [b, e)
     return std::uniform_int_distribution<std::size_t> { b, e - 1 } (random_engine());
-}
-
-template <typename Q>
-void shuffle(Q& que) {
-    std::shuffle(que.begin(), que.end(), random_engine());
 }
 
 bool simulation(board& b, coord na) {
@@ -74,7 +69,6 @@ bool expansion(st_node* curr, board&& b, std::deque<coord> const & steps) {
     return win;
 }
 
-#if 1
 void selection(st_node* curr, board&& b) {
 
     static auto const get_max = [](double a, double b) { return (a == 0.0) || (a < b); };
@@ -114,7 +108,7 @@ void selection(st_node* curr, board&& b) {
         }, steps);
 
         if (steps.empty()) {
-            highest_scores(curr, steps, ai_round ? get_max : get_min);
+            highest_scores(b, curr, steps, ai_round ? get_max : get_min);
             if (set_and_check(steps[random(0, steps.size())])) {
                 break;
             }
@@ -130,41 +124,8 @@ void selection(st_node* curr, board&& b) {
     do {
         policy_stack.top()->set(win);
         policy_stack.pop();
-    } while (win = !win, !policy_stack.empty());
+    } while (void(win = !win), !policy_stack.empty());
 }
-#else
-bool selection(st_node* curr, board&& b, bool ai_round = true) {
-
-    static auto const get_max = [](double a, double b) { return (a == 0.0) || (a < b); };
-    static auto const get_min = [](double a, double b) { return (a == 0.0) || (b < a); };
-
-    bool win;
-    std::deque<coord> steps;
-
-    if (curr->next_.empty()) {
-        b.next_steps([](coord const &) { return true; }, steps);
-    }
-    else b.next_steps([curr](coord const & c) {
-        return curr->next_.find(c) == curr->next_.end();
-    }, steps);
-
-    if (steps.empty()) {
-        highest_scores(curr, steps, ai_round ? get_max : get_min);
-        coord na = steps[random(0, steps.size())];
-        auto  nx = curr->next_[na];
-        if ((win = b.set_and_check(na)) || b.full()) {
-            nx->set(win);
-            curr->set(win = !win);
-        }
-        else curr->set((win = !selection(nx, std::move(b), !ai_round)));
-    }
-    else {
-        win = !expansion(curr, board(b), steps);
-        curr->set(win);
-    }
-    return win;
-}
-#endif
 
 bool do_calc() {
     run__   = true;
@@ -177,7 +138,7 @@ bool do_calc() {
         }
     });
     for (unsigned cnt = 0; run__; ++cnt) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::seconds(1));
         if (call__  != nullptr) {
             lc_all__.lock();
             auto curr = all__.current();
@@ -193,6 +154,7 @@ bool do_calc() {
                     list[i].y_      = int(it.first.y());
                     list[i].rate_   = it.second->rate();
                     list[i].score_  = score(curr, it.second);
+                    list[i].win_    = int(it.second->win_);
                     list[i].visits_ = int(it.second->visits());
                     ++i;
                 }
@@ -201,7 +163,7 @@ bool do_calc() {
                 delete [] list;
             }
         }
-        if ((cnt >= timeout__ * 10) || (total__ >= limit__)) break;
+        if ((cnt >= timeout__) || (total__ >= limit__)) break;
     }
     if (run__) {
         run__ = false;

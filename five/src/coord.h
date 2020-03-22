@@ -23,35 +23,35 @@ public:
 
     coord& operator=(coord const &) noexcept = default;
 
-    friend bool operator==(coord const & x, coord const & y) {
+    friend bool operator==(coord const & x, coord const & y) noexcept {
         return x.val_ == y.val_;
     }
 
-    friend bool operator!=(coord const & x, coord const & y) {
+    friend bool operator!=(coord const & x, coord const & y) noexcept {
         return !(x == y);
     }
 
-    friend bool operator<(coord const & x, coord const & y) {
+    friend bool operator<(coord const & x, coord const & y) noexcept {
         return x.val_ < y.val_;
     }
 
-    bool valid() const {
+    bool valid() const noexcept {
         return val_ < board_pts;
     }
 
-    operator unsigned() const {
+    operator unsigned() const noexcept {
         return val_;
     }
 
-    unsigned x() const {
+    unsigned x() const noexcept {
         return val_ % board_size;
     }
 
-    unsigned y() const {
+    unsigned y() const noexcept {
         return val_ / board_size;
     }
 
-    coord next(unsigned d, int step = 1) const {
+    coord next(unsigned d, int step = 1) const noexcept {
         if (!valid()) return *this;
         int x = int(this->x()), y = int(this->y());
                if (d & direction::up) y -= step;

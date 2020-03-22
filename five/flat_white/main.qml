@@ -19,7 +19,7 @@ Window {
         target: Engine
 
         onThinking: {
-            board.setThinking(v, s)
+            board.setThinking(list)
         }
 
         onThinkingFinished: {

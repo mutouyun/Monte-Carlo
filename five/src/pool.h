@@ -14,7 +14,9 @@ class pool {
     }
 
 public:
-    ~pool() {
+    ~pool() { clear(); }
+
+    void clear() {
         while (!empty()) {
             delete pop();
         }
@@ -26,11 +28,12 @@ public:
 
     T* get() {
         if (empty()) return new T;
-        return pop();
+        T* p = pop();
+        p->clear();
+        return p;
     }
 
     void recycle(T* p) {
-        p->clear();
         ptrs_.push_back(p);
     }
 

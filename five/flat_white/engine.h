@@ -21,7 +21,7 @@ public:
 
 signals:
     void processingChanged();
-    void thinking(QJsonArray v, QJsonArray s);
+    void thinking(QJsonArray list);
     void thinkingFinished(unsigned x, unsigned y);
 
 public slots:

@@ -9,6 +9,7 @@
 #include "def.h"
 #include "coord.h"
 #include "pool.h"
+#include "board.h"
 
 struct st_node {
 
@@ -38,9 +39,9 @@ struct st_node {
         std::size_t rt = 0;
         coord rc;
         for (auto const & it : next_) {
-            std::size_t r = it.second->visits();
-            if (rt < r) {
-                rt = r;
+            std::size_t t = it.second->visits();
+            if (rt < t) {
+                rt = t;
                 rc = it.first;
             }
         }
@@ -70,9 +71,10 @@ double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept {
 }
 
 template <typename Q, typename C>
-double highest_scores(st_node const * p, Q& que, C&& cmp) noexcept {
+double highest_scores(board const & b, st_node const * p, Q& que, C&& cmp) noexcept {
     double rs = 0.0;
     for (auto & it : p->next_) {
+        if (b.get(it.first) != Empty) continue;
         double s = score(p, it.second);
         if (cmp(rs, s)) {
             rs = s;
@@ -132,15 +134,20 @@ public:
     st_node const * current() const noexcept { return data_; }
 
     void put_next(coord const & c) {
+        st_node* x;
         auto it = data_->next_.find(c);
-        if (it == data_->next_.end()) return;
-        st_node* x = it->second;
-        data_->next_.erase(it);
+        if (it == data_->next_.end()) {
+            x = alloc_.get();
+        }
+        else {
+            x = it->second;
+            data_->next_.erase(it);
+        }
         clear(data_);
         data_ = x;
     }
 
-    std::tuple<coord, std::size_t> get_next() {
+    auto get_next() {
         auto tp = data_->get_best();
         put_next(std::get<0>(tp));
         return tp;

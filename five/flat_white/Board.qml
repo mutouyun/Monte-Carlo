@@ -39,8 +39,8 @@ MouseArea {
         canvas.requestPaint()
     }
 
-    function setThinking(l1, l2) {
-        __.thinking = [l1, l2]
+    function setThinking(list) {
+        __.thinking = list
         canvas.requestPaint()
     }
 
@@ -137,22 +137,23 @@ MouseArea {
                 ctx.stroke()
             }
 
-            /* thinking... */
-
-            var t1 = __.thinking[0]
-            if (t1) for (i = 0; i < t1.length; ++i) {
-                ctx.fillStyle = Qt.rgba(1, 0, 0, t1[i].visits / t1[0].visits)
+            if (__.line.length > 0) {
+                var last = __.line[__.line.length - 1]
                 ctx.beginPath()
-                ctx.arc(k / 2 + t1[i].x * k, k / 2 + t1[i].y * k, 4, 0, Math.PI * 2)
+                ctx.arc(k / 2 + last.x * k, k / 2 + last.y * k, 4, 0, Math.PI * 2)
                 ctx.closePath()
+                if ((__.line.length % 2) === 0) {
+                    ctx.fillStyle = "black"
+                }
                 ctx.fill()
             }
 
-            var t2 = __.thinking[1]
-            if (t2) for (i = 0; i < t2.length; ++i) {
-                ctx.fillStyle = Qt.rgba(0, 1, 0, t2[i].score / t2[0].score)
+            /* thinking... */
+
+            for (i = 0; i < __.thinking.length; ++i) {
+                ctx.fillStyle = Qt.rgba(1, 0, 0, __.thinking[i].visits / __.thinking[0].visits)
                 ctx.beginPath()
-                ctx.arc(k / 2 + t2[i].x * k, k / 2 + t2[i].y * k, 2, 0, Math.PI * 2)
+                ctx.arc(k / 2 + __.thinking[i].x * k, k / 2 + __.thinking[i].y * k, 3, 0, Math.PI * 2)
                 ctx.closePath()
                 ctx.fill()
             }

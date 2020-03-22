@@ -32,7 +32,7 @@ Engine::Engine(QObject *parent)
     , processing_(false) {
 
     five_prepare([](void* p, std::size_t t, st_info* l, std::size_t s) {
-        qDebug() << "games[" << ++counter__ << "]:" << t;
+        qDebug() << ++counter__ << "-" << t;
 
         std::vector<QJsonObject> infos;
         for (std::size_t i = 0; i < s; ++i) {
@@ -41,6 +41,7 @@ Engine::Engine(QObject *parent)
                 { "y"     , l[i].y_      },
                 { "rate"  , l[i].rate_   },
                 { "score" , l[i].score_  },
+                { "win"   , l[i].win_    },
                 { "visits", l[i].visits_ }
             });
         }
@@ -48,17 +49,11 @@ Engine::Engine(QObject *parent)
         std::sort(infos.begin(), infos.end(), [](QJsonObject const & x, QJsonObject const & y) {
             return x["visits"].toInt() > y["visits"].toInt();
         });
-        QJsonArray r1;
-        for (QJsonObject const & i : infos) r1 << i;
+        QJsonArray list;
+        for (QJsonObject const & i : infos) list << i;
 
-        std::sort(infos.begin(), infos.end(), [](QJsonObject const & x, QJsonObject const & y) {
-            return x["score"].toInt() > y["score"].toInt();
-        });
-        QJsonArray r2;
-        for (QJsonObject const & i : infos) r2 << i;
-
-        emit ((Engine*)p)->thinking(r1, r2);
-    }, 200000, 10, this);
+        emit ((Engine*)p)->thinking(list);
+    }, 500000, 30, this);
 
     five_start_game();
 }

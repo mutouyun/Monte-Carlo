@@ -6,9 +6,8 @@
 
 struct FIVESHARED_EXPORT st_info {
     int x_, y_;
-    double rate_;
-    double score_;
-    int visits_;
+    double rate_, score_;
+    int win_, visits_;
 };
 
 using call_t = void(*)(void* p, std::size_t t, st_info* l, std::size_t s);

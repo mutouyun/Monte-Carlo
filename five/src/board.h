@@ -12,19 +12,22 @@ class board {
     piece_t next_pie_ = Black;
     std::size_t set_count_ = 0;
     std::array<piece_t, board_pts> datas_ {};
-    coord urgency_;
+    coord urgency_ { 7, 7 };
+
+    unsigned get_match(piece_t pie, unsigned d, coord&& x, unsigned cnt, int step) const noexcept {
+        unsigned k = 0;
+        for (; k < cnt; ++k) {
+            x = x.next(d, step);
+            if (get(x) != pie) break;
+        }
+        return k;
+    }
 
     // "xxxx_", "xxx_x", "xx_xx", "x_xxx", "_xxxx"
-    coord urgent(coord const & c, unsigned d) const {
+    coord urgent(coord const & c, unsigned d) const noexcept {
         piece_t const pie = get(c);
-
         auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
-            unsigned k = 0;
-            for (; k < cnt; ++k) {
-                x = x.next(d, step);
-                if (get(x) != pie) break;
-            }
-            return k;
+            return this->get_match(pie, d, std::move(x), cnt, step);
         };
 
         coord x = c;
@@ -61,17 +64,36 @@ class board {
         else return {};
     }
 
-    unsigned count(coord const & c, unsigned d) const {
+    // "xxxxx", "_xxxx_"
+    bool over(coord const & c, unsigned d) const noexcept {
         piece_t const pie = get(c);
-        unsigned cnt = 0;
-        for (coord x = c.next(d); x.valid(); ++cnt, x = x.next(d)) {
-            if (get(x) != pie) break;
-        }
-        return cnt;
-    }
+        auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
+            return this->get_match(pie, d, std::move(x), cnt, step);
+        };
 
-    unsigned count(coord const & c, direction d) const {
-        return count(c, unsigned(d));
+        coord x = c;
+        unsigned l = get_match(std::move(x), 4);
+        switch (l) {
+        case 4: // cxxxx
+            return true;
+        case 3: // ?cxxx?
+            if (get(x) == Empty) { // ?cxxx_
+                piece_t p = get(c.next(d, -1));
+                return (p == Empty) || (p == pie); // _cxxx_ || xcxxx_
+            }
+            else return (get_match(coord(c), 1, -1) == 1); // xcxxx
+        case 2: // ??cxx?
+            switch (get_match(coord(c), 2, -1)) {
+            case 2: // xxcxx
+                return true;
+            case 1: // ?xcxx?
+                return (get(x) == Empty) && (get(c.next(d, -2)) == Empty); // _xcxx_
+            default:
+                return false;
+            }
+        default:
+            return false;
+        }
     }
 
 public:
@@ -87,38 +109,35 @@ public:
         return next_pie_;
     }
 
-    template <typename Q>
-    void holes(Q& que) const noexcept {
-        for (unsigned i = 0; i < datas_.size(); ++i) {
-            if (datas_[i] != Empty) continue;
-            que.push_back(i);
-        }
-    }
-
     coord get_urgency() const noexcept {
         return urgency_;
     }
 
     template <typename F, typename Q>
-    void next_steps(F && check, Q& que) const noexcept {
-        if (empty()) {
-            que.push_back(coord(7, 7));
-            return;
+    void holes(F && check, Q& que) const noexcept {
+        for (unsigned i = 0; i < datas_.size(); ++i) {
+            if ((datas_[i] != Empty) || !check(i)) continue;
+            que.push_back(i);
         }
+    }
+
+    template <typename F, typename Q>
+    void next_steps(F && check, Q& que) const noexcept {
         int min_x = board_size, max_x = 0,
             min_y = board_size, max_y = 0;
         for (unsigned i = 0; i < datas_.size(); ++i) {
             if (datas_[i] == Empty) continue;
-            int x = coord(i).x(), y = coord(i).y();
+            int x = int(coord(i).x()), y = int(coord(i).y());
             if (min_x > x) min_x = x;
             if (max_x < x) max_x = x;
             if (min_y > y) min_y = y;
             if (max_y < y) max_y = y;
         }
-        min_x = std::max(min_x - 1, 0);
-        max_x = std::min(max_x + 1, board_size - 1);
-        min_y = std::max(min_y - 1, 0);
-        max_y = std::min(max_y + 1, board_size - 1);
+        int delta = (set_count_ == 1) ? 1 : 2;
+        min_x = std::max(min_x - delta, 0);
+        max_x = std::min(max_x + delta, board_size - 1);
+        min_y = std::max(min_y - delta, 0);
+        max_y = std::min(max_y + delta, board_size - 1);
         for (int i = min_x; i <= max_x; ++i) {
             for (int j = min_y; j <= max_y; ++j) {
                 coord c { unsigned(i), unsigned(j) };
@@ -158,18 +177,15 @@ public:
         if (!c.valid()) return false;
         set(c);
 
-        static unsigned const list[][2] = {
-            { unsigned(direction::up), unsigned(direction::dn) },
-            { unsigned(direction::le), unsigned(direction::ri) },
-            { direction::up | direction::le, direction::dn | direction::ri },
-            { direction::up | direction::ri, direction::dn | direction::le }
+        static unsigned const list[] = {
+            unsigned(direction::up), unsigned(direction::dn),
+            unsigned(direction::le), unsigned(direction::ri),
+            direction::up | direction::le, direction::dn | direction::ri,
+            direction::up | direction::ri, direction::dn | direction::le
         };
 
-        for (auto const & ds : list) {
-            unsigned cnt = count(c, ds[0]) + 1;
-            if (cnt >= win_count) return true;
-            cnt += count(c, ds[1]);
-            if (cnt >= win_count) return true;
+        for (auto d : list) {
+            if (over(c, d)) return true;
         }
         return false;
     }
