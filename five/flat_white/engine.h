@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QObject>
+#include <QJsonArray>
 
 class Engine : public QObject {
 
@@ -20,6 +21,7 @@ public:
 
 signals:
     void processingChanged();
+    void thinking(QJsonArray v, QJsonArray s);
     void thinkingFinished(unsigned x, unsigned y);
 
 public slots:

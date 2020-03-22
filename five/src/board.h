@@ -8,20 +8,62 @@
 #include "def.h"
 #include "coord.h"
 
-namespace {
-
-
-
-} // namespace
-
 class board {
     piece_t next_pie_ = Black;
     std::size_t set_count_ = 0;
     std::array<piece_t, board_pts> datas_ {};
+    coord urgency_;
+
+    // "xxxx_", "xxx_x", "xx_xx", "x_xxx", "_xxxx"
+    coord urgent(coord const & c, unsigned d) const {
+        piece_t const pie = get(c);
+
+        auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
+            unsigned k = 0;
+            for (; k < cnt; ++k) {
+                x = x.next(d, step);
+                if (get(x) != pie) break;
+            }
+            return k;
+        };
+
+        coord x = c;
+        unsigned l = get_match(std::move(x), 4);
+        if (get(x) == Empty) switch (l) {
+        case 0: // ???c_???
+            switch (get_match(coord(x), 3)) {
+            case 3:  // c_xxx
+                return x;
+            case 2:  // xc_xx
+                return (get_match(coord(c), 1, -1) == 1) ? x : coord{};
+            case 1:  // xxc_x
+                return (get_match(coord(c), 2, -1) == 2) ? x : coord{};
+            default: // xxxc_
+                return (get_match(coord(c), 3, -1) == 3) ? x : coord{};
+            }
+        case 1: // ??cx_??
+            switch (get_match(coord(x), 2)) {
+            case 2:  // cx_xx
+                return x;
+            case 1:  // xcx_x
+                return (get_match(coord(c), 1, -1) == 1) ? x : coord{};
+            default: // xxcx_
+                return (get_match(coord(c), 2, -1) == 2) ? x : coord{};
+            }
+        case 2: // ?cxx_?
+            return (get_match(coord(x), 1)     == 1) ? x /* cxx_x */ :
+                   (get_match(coord(c), 1, -1) == 1) ? x /* xcxx_ */ : coord{};
+        case 3: // cxxx_
+            return x;
+        default:
+            return {};
+        }
+        else return {};
+    }
 
     unsigned count(coord const & c, unsigned d) const {
+        piece_t const pie = get(c);
         unsigned cnt = 0;
-        piece_t  pie = get(c);
         for (coord x = c.next(d); x.valid(); ++cnt, x = x.next(d)) {
             if (get(x) != pie) break;
         }
@@ -51,6 +93,10 @@ public:
             if (datas_[i] != Empty) continue;
             que.push_back(i);
         }
+    }
+
+    coord get_urgency() const noexcept {
+        return urgency_;
     }
 
     template <typename F, typename Q>
@@ -84,13 +130,27 @@ public:
 
     void set(coord const & c) {
         if (!c.valid()) return;
+
         datas_[c] = next_pie_;
         next_pie_ = (next_pie_ == White) ? Black : White;
         ++ set_count_;
+
+        static unsigned const list[] = {
+            unsigned(direction::up), unsigned(direction::dn),
+            unsigned(direction::le), unsigned(direction::ri),
+            direction::up | direction::le, direction::dn | direction::ri,
+            direction::up | direction::ri, direction::dn | direction::le
+        };
+
+        for (auto d : list) {
+            coord x = urgent(c, d);
+            if (x.valid()) { urgency_ = x; return; }
+        }
+        urgency_ = {};
     }
 
     piece_t get(coord const & c) const {
-        if (!c.valid()) return Empty;
+        if (!c.valid()) return Invalid;
         return datas_[c];
     }
 
@@ -98,26 +158,19 @@ public:
         if (!c.valid()) return false;
         set(c);
 
-        unsigned cnt = count(c, direction::up) + 1;
-        if (cnt >= win_count) return true;
-        cnt += count(c, direction::down);
-        if (cnt >= win_count) return true;
+        static unsigned const list[][2] = {
+            { unsigned(direction::up), unsigned(direction::dn) },
+            { unsigned(direction::le), unsigned(direction::ri) },
+            { direction::up | direction::le, direction::dn | direction::ri },
+            { direction::up | direction::ri, direction::dn | direction::le }
+        };
 
-        cnt = count(c, direction::left) + 1;
-        if (cnt >= win_count) return true;
-        cnt += count(c, direction::right);
-        if (cnt >= win_count) return true;
-
-        cnt = count(c, direction::up | direction::left) + 1;
-        if (cnt >= win_count) return true;
-        cnt += count(c, direction::down | direction::right);
-        if (cnt >= win_count) return true;
-
-        cnt = count(c, direction::up | direction::right) + 1;
-        if (cnt >= win_count) return true;
-        cnt += count(c, direction::down | direction::left);
-        if (cnt >= win_count) return true;
-
+        for (auto const & ds : list) {
+            unsigned cnt = count(c, ds[0]) + 1;
+            if (cnt >= win_count) return true;
+            cnt += count(c, ds[1]);
+            if (cnt >= win_count) return true;
+        }
         return false;
     }
 };

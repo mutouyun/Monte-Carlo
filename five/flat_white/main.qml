@@ -17,7 +17,15 @@ Window {
 
     Connections {
         target: Engine
-        onThinkingFinished: board.putCoord(x, y)
+
+        onThinking: {
+            board.setThinking(v, s)
+        }
+
+        onThinkingFinished: {
+            board.setThinking([])
+            board.putCoord(x, y)
+        }
     }
 
     MouseArea {

@@ -7,6 +7,7 @@ MouseArea {
         id: __
 
         property var line: []
+        property var thinking: []
 
         readonly property var letters: [
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O'
@@ -34,6 +35,12 @@ MouseArea {
 
     function clear() {
         __.line = []
+        __.thinking = []
+        canvas.requestPaint()
+    }
+
+    function setThinking(l1, l2) {
+        __.thinking = [l1, l2]
         canvas.requestPaint()
     }
 
@@ -128,6 +135,26 @@ MouseArea {
                 ctx.closePath()
                 ctx.fill()
                 ctx.stroke()
+            }
+
+            /* thinking... */
+
+            var t1 = __.thinking[0]
+            if (t1) for (i = 0; i < t1.length; ++i) {
+                ctx.fillStyle = Qt.rgba(1, 0, 0, t1[i].visits / t1[0].visits)
+                ctx.beginPath()
+                ctx.arc(k / 2 + t1[i].x * k, k / 2 + t1[i].y * k, 4, 0, Math.PI * 2)
+                ctx.closePath()
+                ctx.fill()
+            }
+
+            var t2 = __.thinking[1]
+            if (t2) for (i = 0; i < t2.length; ++i) {
+                ctx.fillStyle = Qt.rgba(0, 1, 0, t2[i].score / t2[0].score)
+                ctx.beginPath()
+                ctx.arc(k / 2 + t2[i].x * k, k / 2 + t2[i].y * k, 2, 0, Math.PI * 2)
+                ctx.closePath()
+                ctx.fill()
             }
         }
     }

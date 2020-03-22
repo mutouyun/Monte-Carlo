@@ -12,7 +12,9 @@ public:
     coord(coord const &) noexcept = default;
 
     coord(unsigned v) noexcept
-        : val_ { (std::uint16_t)v } {}
+        : val_ {
+            (v < board_pts) ? v : unsigned(board_pts)
+        } {}
 
     coord(unsigned x, unsigned y) noexcept
         : val_ {
@@ -49,14 +51,14 @@ public:
         return val_ / board_size;
     }
 
-    coord next(unsigned d) const {
+    coord next(unsigned d, int step = 1) const {
         if (!valid()) return *this;
-        unsigned x = this->x(), y = this->y();
-               if (d & direction::up   ) --y;
-        else { if (d & direction::down ) ++y; }
-               if (d & direction::left ) --x;
-        else { if (d & direction::right) ++x; }
-        return coord(x, y);
+        int x = int(this->x()), y = int(this->y());
+               if (d & direction::up) y -= step;
+        else { if (d & direction::dn) y += step; }
+               if (d & direction::le) x -= step;
+        else { if (d & direction::ri) x += step; }
+        return { unsigned(x), unsigned(y) };
     }
 };
 
