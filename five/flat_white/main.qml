@@ -8,12 +8,10 @@ Window {
     visible: true
     title: qsTr("flat white")
 
-    width: 800
-    height: 600
-    maximumWidth: width
-    maximumHeight: height
-    minimumWidth: width
-    minimumHeight: height
+    minimumWidth: 800
+    minimumHeight: 600
+    width: minimumWidth
+    height: minimumHeight
 
     Connections {
         target: Engine

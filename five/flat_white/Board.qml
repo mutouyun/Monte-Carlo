@@ -46,117 +46,99 @@ MouseArea {
 
     Canvas {
         id: canvas
+
         anchors.fill: parent
+        contextType: "2d"
+
+        property real k: width / 15
+
+        function fill(color, action) {
+            context.fillStyle = color
+            context.beginPath()
+            action()
+            context.fill()
+        }
+
+        function stroke(color, action) {
+            context.strokeStyle = color
+            context.beginPath()
+            action()
+            context.stroke()
+        }
+
+        function coord(c) {
+            return ~~((c + 0.5) * k)
+        }
+
+        function circle(x, y, r) {
+            context.ellipse(coord(x) - r, coord(y) - r, r * 2, r * 2)
+        }
 
         onPaint: {
-            var ctx = getContext("2d")
-            var k = width / 15, w = width - k
-
-            /* fill background */
-
-            ctx.beginPath()
-            ctx.rect(0, 0, width, width)
-            ctx.closePath()
-
-            ctx.fillStyle = "white"
-            ctx.fill()
-
-            /* draw border */
-
-            ctx.translate(0.5, 0.5)
-            ctx.beginPath()
-            ctx.rect(k / 2, k / 2, w, w)
-            ctx.closePath()
+            context.translate(0.5, 0.5)
 
             /* draw lines */
 
-            for (var i = 1; i < 14; ++i) {
-                ctx.moveTo(k / 2, k / 2 + i * k)
-                ctx.lineTo(k / 2 + w, k / 2 + i * k)
-            }
-            for (i = 1; i < 14; ++i) {
-                ctx.moveTo(k / 2 + i * k, k / 2)
-                ctx.lineTo(k / 2 + i * k, k / 2 + w)
-            }
-
-            ctx.strokeStyle = 'black'
-            ctx.lineWidth = 1
-            ctx.fill()
-            ctx.stroke()
-            ctx.translate(-0.5, -0.5)
+            stroke('black', function() {
+                context.lineWidth = 1
+                for (var i = 0; i < 15; ++i) {
+                    context.moveTo(coord(0) , coord(i) )
+                    context.lineTo(coord(14), coord(i) )
+                    context.moveTo(coord(i) , coord(0) )
+                    context.lineTo(coord(i) , coord(14))
+                }
+            })
 
             /* draw stars */
 
-            ctx.beginPath()
-            ctx.arc((k + w) / 2, (k + w) / 2, 5, 0, Math.PI * 2)
-            ctx.closePath()
-
-            ctx.fillStyle = "black"
-            ctx.fill()
-
-            ctx.beginPath()
-            ctx.arc( 3.5 * k,  3.5 * k, 4, 0, Math.PI * 2)
-            ctx.arc(11.5 * k,  3.5 * k, 4, 0, Math.PI * 2)
-            ctx.closePath()
-            ctx.fill()
-
-            ctx.beginPath()
-            ctx.arc( 3.5 * k, 11.5 * k, 4, 0, Math.PI * 2)
-            ctx.arc(11.5 * k, 11.5 * k, 4, 0, Math.PI * 2)
-            ctx.closePath()
-            ctx.fill()
+            fill('black', function() {
+                circle( 7,  7, 5)
+                circle( 3,  3, 4)
+                circle(11,  3, 4)
+                circle( 3, 11, 4)
+                circle(11, 11, 4)
+            })
 
             /* draw coordinate texts */
 
-            ctx.font="14px Arial"
-            ctx.textAlign = "center"
-            ctx.textBaseline = "middle"
-
-            for (i = 0; i < 15; ++i) {
-                ctx.fillText(__.letters[i], k / 2 + i * k, k / 4)
-            }
-            for (i = 0; i < 15; ++i) {
-                ctx.fillText(i + 1, k / 4, k / 2 + i * k)
+            context.font="14px Arial"
+            context.textAlign = "center"
+            context.textBaseline = "middle"
+            for (var i = 0; i < 15; ++i) {
+                context.fillText(__.letters[i], coord(i), coord(0) / 2)
+                context.fillText(i + 1        , coord(0) / 2, coord(i))
             }
 
             /* draw pieces */
 
-            for (i = 0; i < __.line.length; i += 2) {
-                ctx.beginPath()
-                ctx.arc(k / 2 + __.line[i].x * k, k / 2 + __.line[i].y * k, k / 2 - 1, 0, Math.PI * 2)
-                ctx.closePath()
-                ctx.fill()
-            }
-
-            ctx.fillStyle = "white"
-            for (i = 1; i < __.line.length; i += 2) {
-                ctx.beginPath()
-                ctx.arc(k / 2 + __.line[i].x * k, k / 2 + __.line[i].y * k, k / 2 - 1, 0, Math.PI * 2)
-                ctx.closePath()
-                ctx.fill()
-                ctx.stroke()
-            }
+            fill('black', function() {
+                for (var i = 0; i < __.line.length; i += 2) {
+                    circle(__.line[i].x, __.line[i].y, coord(0) - 1)
+                }
+            })
+            fill('white', function() {
+                context.lineWidth = 2
+                for (var i = 1; i < __.line.length; i += 2) {
+                    circle(__.line[i].x, __.line[i].y, coord(0) - 1)
+                }
+                context.stroke()
+            })
 
             if (__.line.length > 0) {
                 var last = __.line[__.line.length - 1]
-                ctx.beginPath()
-                ctx.arc(k / 2 + last.x * k, k / 2 + last.y * k, 4, 0, Math.PI * 2)
-                ctx.closePath()
-                if ((__.line.length % 2) === 0) {
-                    ctx.fillStyle = "black"
-                }
-                ctx.fill()
+                fill(((__.line.length % 2) === 0) ? Qt.rgba(0, 0, 0, 0.9) :
+                                                    Qt.rgba(1, 1, 1, 0.9),
+                     function() { circle(last.x, last.y, 4) })
             }
 
             /* thinking... */
 
             for (i = 0; i < __.thinking.length; ++i) {
-                ctx.fillStyle = Qt.rgba(1, 0, 0, __.thinking[i].visits / __.thinking[0].visits)
-                ctx.beginPath()
-                ctx.arc(k / 2 + __.thinking[i].x * k, k / 2 + __.thinking[i].y * k, 3, 0, Math.PI * 2)
-                ctx.closePath()
-                ctx.fill()
+                fill(Qt.rgba(1, 0, 0, __.thinking[i].visits / __.thinking[0].visits),
+                     function() { circle(__.thinking[i].x, __.thinking[i].y, 3) })
             }
+
+            context.translate(-0.5, -0.5)
         }
     }
 }
