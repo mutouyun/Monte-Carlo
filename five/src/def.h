@@ -2,8 +2,7 @@
 
 enum {
     board_size = 15,
-    board_pts  = board_size * board_size,
-    win_count  = 5
+    board_pts  = board_size * board_size
 };
 
 using piece_t = int;
@@ -14,10 +13,10 @@ constexpr piece_t const Black   = 2;
 constexpr piece_t const Invalid = -1;
 
 enum class direction : unsigned {
-    up = 0x01,
-    dn = 0x02,
-    le = 0x04,
-    ri = 0x08
+    up = 0x01, // up
+    dn = 0x02, // down
+    le = 0x04, // left
+    ri = 0x08  // right
 };
 
 unsigned operator|(direction x, direction y) noexcept {

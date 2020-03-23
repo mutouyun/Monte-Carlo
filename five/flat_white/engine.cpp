@@ -55,7 +55,11 @@ Engine::Engine(QObject *parent)
         emit ((Engine*)p)->thinking(list);
     }, 500000, 30, this);
 
-    five_start_game();
+    restart();
+}
+
+Engine::~Engine() {
+    restart();
 }
 
 bool Engine::processing() const {

@@ -64,7 +64,7 @@ class board {
         else return {};
     }
 
-    // "xxxxx", "_xxxx_"
+    // "xxxxx", "_xxxx__", "__xxxx_"
     bool over(coord const & c, unsigned d) const noexcept {
         piece_t const pie = get(c);
         auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
@@ -77,9 +77,10 @@ class board {
         case 4: // cxxxx
             return true;
         case 3: // ?cxxx?
-            if (get(x) == Empty) { // ?cxxx_
+            if (get(x) == Empty) { // ?cxxx_?
                 piece_t p = get(c.next(d, -1));
-                return (p == Empty) || (p == pie); // _cxxx_ || xcxxx_
+                return (p == pie) || // xcxxx_
+                      ((p == Empty) && (get(x.next(d)) == Empty)); // _cxxx__
             }
             else return (get_match(coord(c), 1, -1) == 1); // xcxxx
         case 2: // ??cxx?
@@ -87,10 +88,22 @@ class board {
             case 2: // xxcxx
                 return true;
             case 1: // ?xcxx?
-                return (get(x) == Empty) && (get(c.next(d, -2)) == Empty); // _xcxx_
+                return (get(x) == Empty) &&
+                       (get(x.next(d)) == Empty) &&
+                       (get(c.next(d, -2)) == Empty); // _xcxx__
             default:
                 return false;
             }
+        case 1: // ???cx?
+            return (get_match(coord(c), 2, -1) == 2) &&
+                   (get(x) == Empty) &&
+                   (get(x.next(d)) == Empty) &&
+                   (get(c.next(d, -3)) == Empty); // _xxcx__
+        case 0: // ????c?
+            return (get_match(coord(c), 3, -1) == 3) &&
+                   (get(x) == Empty) &&
+                   (get(x.next(d)) == Empty) &&
+                   (get(c.next(d, -4)) == Empty); // _xxxc__
         default:
             return false;
         }

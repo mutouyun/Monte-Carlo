@@ -20,10 +20,15 @@ public:
         while (!empty()) {
             delete pop();
         }
+        ptrs_.shrink_to_fit();
     }
 
     bool empty() const noexcept {
         return ptrs_.empty();
+    }
+
+    std::size_t size() const noexcept {
+        return ptrs_.size();
     }
 
     T* get() {

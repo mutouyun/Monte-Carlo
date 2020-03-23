@@ -71,13 +71,10 @@ bool expansion(st_node* curr, board&& b, std::deque<coord> const & steps) {
 
 void selection(st_node* curr, board&& b) {
 
-    static auto const get_max = [](double a, double b) { return (a == 0.0) || (a < b); };
-    static auto const get_min = [](double a, double b) { return (a == 0.0) || (b < a); };
-
     std::stack<st_node*> policy_stack;
     policy_stack.push(curr);
 
-    bool ai_round = true, win;
+    bool win;
     auto set_and_check = [&](coord na) mutable {
         auto nx = curr->next_[na];
         if ((win = b.set_and_check(na)) || b.full()) {
@@ -89,7 +86,7 @@ void selection(st_node* curr, board&& b) {
         return false;
     };
 
-    for (std::deque<coord> steps;; steps.clear(), ai_round = !ai_round) {
+    for (std::deque<coord> steps;; steps.clear()) {
         coord u = b.get_urgency();
         if (u.valid()) {
             if (curr->next_.find(u) == curr->next_.end()) {
@@ -108,7 +105,7 @@ void selection(st_node* curr, board&& b) {
         }, steps);
 
         if (steps.empty()) {
-            highest_scores(b, curr, steps, ai_round ? get_max : get_min);
+            highest_scores(b, curr, steps, [](double a, double b) { return a < b; });
             if (set_and_check(steps[random(0, steps.size())])) {
                 break;
             }

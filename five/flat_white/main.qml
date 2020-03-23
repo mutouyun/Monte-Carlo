@@ -21,8 +21,13 @@ Window {
         }
 
         onThinkingFinished: {
-            board.setThinking([])
             board.putCoord(x, y)
+        }
+
+        onProcessingChanged: {
+            if (!Engine.processing) {
+                board.setThinking([])
+            }
         }
     }
 
@@ -47,7 +52,9 @@ Window {
         onClicked: {
             if (mouse.button === Qt.LeftButton) {
                 var coord = putPos(mouse.x, mouse.y)
-                Engine.move(coord.x, coord.y)
+                if ((coord.x >= 0) || (coord.y >= 0)) {
+                    Engine.move(coord.x, coord.y)
+                }
             }
             else if (mouse.button === Qt.RightButton) {
                 Engine.calcNext()

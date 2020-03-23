@@ -11,6 +11,7 @@ class Engine : public QObject {
 
 public:
     explicit Engine(QObject* parent = nullptr);
+    ~Engine();
 
     bool processing() const;
     void setProcessing(bool p);

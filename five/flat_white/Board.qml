@@ -75,6 +75,7 @@ MouseArea {
         }
 
         onPaint: {
+            context.clearRect(0, 0, width, height)
             context.translate(0.5, 0.5)
 
             /* draw lines */
@@ -117,25 +118,31 @@ MouseArea {
                 }
             })
             fill('white', function() {
-                context.lineWidth = 2
                 for (var i = 1; i < __.line.length; i += 2) {
                     circle(__.line[i].x, __.line[i].y, coord(0) - 1)
                 }
+                context.lineWidth = 2
                 context.stroke()
             })
-
             if (__.line.length > 0) {
                 var last = __.line[__.line.length - 1]
-                fill(((__.line.length % 2) === 0) ? Qt.rgba(0, 0, 0, 0.9) :
-                                                    Qt.rgba(1, 1, 1, 0.9),
+                fill(((__.line.length % 2) === 0) ? Qt.rgba(0, 0, 0, 0.95) :
+                                                    Qt.rgba(1, 1, 1, 0.95),
                      function() { circle(last.x, last.y, 4) })
             }
 
             /* thinking... */
 
-            for (i = 0; i < __.thinking.length; ++i) {
-                fill(Qt.rgba(1, 0, 0, __.thinking[i].visits / __.thinking[0].visits),
-                     function() { circle(__.thinking[i].x, __.thinking[i].y, 3) })
+            if (__.thinking.length > 0) {
+                fill(Qt.rgba(1, 0, 0, 1), function() {
+                    circle(__.thinking[0].x, __.thinking[0].y, 3)
+                    context.stroke()
+                })
+                for (i = 1; i < __.thinking.length; ++i) {
+                    fill(Qt.rgba(1, 0, 0, __.thinking[i].visits / (__.thinking[0].visits * 2)), function() {
+                        circle(__.thinking[i].x, __.thinking[i].y, 3)
+                    })
+                }
             }
 
             context.translate(-0.5, -0.5)
