@@ -53,7 +53,7 @@ Engine::Engine(QObject *parent)
         for (QJsonObject const & i : infos) list << i;
 
         emit ((Engine*)p)->thinking(list);
-    }, 600000, 58, this);
+    }, unsigned(-1), 30, this);
 
     restart();
 }

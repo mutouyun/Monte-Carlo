@@ -154,6 +154,7 @@ bool do_calc() {
     });
     for (unsigned cnt = 0; run__; ++cnt) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
+        if (!job__.joinable()) break;
         std::size_t t = total__.load(std::memory_order_relaxed);
         if (call__  != nullptr) {
             lc_all__.lock();
