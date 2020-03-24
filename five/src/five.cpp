@@ -78,7 +78,9 @@ void selection(st_node* curr, board&& b) {
     auto set_and_check = [&](coord na) mutable {
         auto nx = curr->next_[na];
         if ((win = b.set_and_check(na)) || b.full()) {
+            if (curr == all__.current()) lc_all__.lock();
             nx->set(win);
+            if (curr == all__.current()) lc_all__.unlock();
             win = !win;
             return true;
         }
@@ -88,6 +90,7 @@ void selection(st_node* curr, board&& b) {
 
     for (std::deque<coord> steps;; steps.clear()) {
         coord u = b.get_urgency();
+
         if (u.valid()) {
             if (curr->next_.find(u) == curr->next_.end()) {
                 steps.push_back(u);
@@ -119,7 +122,9 @@ void selection(st_node* curr, board&& b) {
 
     // backpropagation
     do {
+        if (policy_stack.size() <= 2) lc_all__.lock();
         policy_stack.top()->set(win);
+        if (policy_stack.size() <= 2) lc_all__.unlock();
         policy_stack.pop();
     } while (void(win = !win), !policy_stack.empty());
 }
@@ -128,11 +133,7 @@ bool do_calc() {
     run__   = true;
     total__ = 0;
     job__   = std::thread([] {
-        while (run__) {
-            lc_all__.lock();
-            selection(all__.current(), board(board__));
-            lc_all__.unlock();
-        }
+        while (run__) selection(all__.current(), board(board__));
     });
     for (unsigned cnt = 0; run__; ++cnt) {
         std::this_thread::sleep_for(std::chrono::seconds(1));
