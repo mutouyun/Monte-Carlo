@@ -61,45 +61,38 @@ bool simulation(board& b, coord na) {
     return win ? !(k & 1) : !!(k & 1);
 }
 
-std::vector<int> expansion(st_node* curr, board&& b, std::deque<coord> const & list) {
+void expansion(st_node* curr, board&& b, std::deque<coord> const & list) {
     // build all nexts
+    if (curr == all__.current()) lc_all__.lock();
     for (coord c : list) {
         build_next(all__.allocator(), curr, c);
     }
+    if (curr == all__.current()) lc_all__.unlock();
+
     // simulate all coords in list
-    std::vector<std::promise<bool>> wins { list.size() };
+    std::vector<std::promise<void>> wins { list.size() };
     for (size_t i = 0; i < list.size(); ++i) {
         async::works().push([b, i, curr, &list, &wins]() mutable {
-            bool win = simulation(b, list[i]);
-            curr->next_[list[i]]->set(win);
-            wins[i].set_value(win);
+            coord c = list[i];
+            curr->next_[c]->set(simulation(b, c));
+            wins[i].set_value();
         });
     }
-    // waiting for results
-    std::vector<int> results;
-    for (auto & w : wins) {
-        results.push_back(w.get_future().get() ? 0 : 1);
-    }
-    return results;
+
+    // waiting for all finished
+    for (auto & w : wins) w.get_future().wait();
 }
 
 void selection(st_node* curr, board&& b) {
 
-    std::stack<st_node*> policy_stack;
-    policy_stack.push(curr);
-
-    std::vector<int> wins;
     auto set_and_check = [&](coord na) mutable {
         auto nx = curr->next_[na];
         bool win;
         if ((win = b.set_and_check(na)) || b.full()) {
-            if (curr == all__.current()) lc_all__.lock();
             nx->set(win);
-            if (curr == all__.current()) lc_all__.unlock();
-            wins.push_back(win ? 0 : 1);
             return true;
         }
-        policy_stack.push(curr = nx);
+        curr = nx;
         return false;
     };
 
@@ -128,22 +121,10 @@ void selection(st_node* curr, board&& b) {
             }
             else continue;
         }
-        else {
-            wins = expansion(curr, board(b), list);
-            break;
-        }
-    }
 
-    // backpropagation
-    do {
-        if (policy_stack.size() <= 2) lc_all__.lock();
-        for (int flag : wins) {
-            policy_stack.top()->set(flag != 0);
-        }
-        if (policy_stack.size() <= 2) lc_all__.unlock();
-        policy_stack.pop();
-        for (int& flag : wins) flag = (flag == 0) ? 1 : 0;
-    } while (!policy_stack.empty());
+        expansion(curr, board(b), list);
+        break;
+    }
 }
 
 bool do_calc() {
@@ -171,7 +152,7 @@ bool do_calc() {
                     list[i].y_      = int(it.first.y());
                     list[i].rate_   = it.second->rate();
                     list[i].score_  = score(curr, it.second);
-                    list[i].win_    = int(it.second->win_);
+                    list[i].win_    = int(it.second->win());
                     list[i].visits_ = int(it.second->visits());
                     ++i;
                 }
@@ -211,7 +192,7 @@ void five_start_game() {
 }
 
 std::size_t five_calc_next(unsigned* px, unsigned* py) {
-    if ((px == nullptr) || (py == nullptr)) return 0.0;
+    if ((px == nullptr) || (py == nullptr)) return 0;
     coord c { *px, *py };
     if (c.valid()) {
         all__.put_next(c);

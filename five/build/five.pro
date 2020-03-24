@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 CONFIG -= qt
+CONFIG += c++14 c++1z
 
 TARGET = five
 TEMPLATE = lib
@@ -22,7 +23,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-QMAKE_CXXFLAGS += -std=c++1z
+!msvc:QMAKE_CXXFLAGS += -std=c++1z
 
 INCLUDEPATH += \
         ../include \
@@ -44,9 +45,9 @@ SOURCES += \
 
 DESTDIR = ../build/bin
 
-LIBS += -lpthread
-
 unix {
+    LIBS += -lpthread
+
     target.path = /usr/lib
     INSTALLS += target
 }

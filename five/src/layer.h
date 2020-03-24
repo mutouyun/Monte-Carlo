@@ -5,6 +5,8 @@
 #include <tuple>
 #include <cmath>
 #include <cstring>
+#include <atomic>
+#include <cstdint>
 
 #include "def.h"
 #include "coord.h"
@@ -32,25 +34,40 @@ public:
 
 struct st_node {
 
-    std::size_t win_    = 0;
-    std::size_t visits_ = 0;
-    nodes       next_;
+    std::atomic<std::uint64_t> visits_ { 0 };
+    st_node* parent_ = nullptr;
+    nodes    next_;
+
+    enum : std::uint64_t {
+        win_flag    = 0x100000000ull,
+        visits_mask = 0x0ffffffffull
+    };
 
     void set(bool win) noexcept {
-        visits_ += 1;
-        if (win) win_ += 1;
+        std::uint64_t add = 1;
+        if (win) add += win_flag;
+        visits_.fetch_add(add, std::memory_order_relaxed);
+        // backpropagation
+        if (parent_ != nullptr) parent_->set(!win);
+    }
+
+    std::size_t win() const noexcept {
+        return (visits_.load(std::memory_order_relaxed) & ~visits_mask) >> 32;
     }
 
     std::size_t visits() const noexcept {
-        return visits_;
+        return visits_.load(std::memory_order_relaxed) & visits_mask;
     }
 
     double rate() const noexcept {
-        return win_ ? (double(win_) / double(visits())) : 0.0;
+        std::uint64_t v = visits_.load(std::memory_order_relaxed),
+                      w = (v & ~visits_mask) >> 32;
+        return w ? (double(w) / double(v & visits_mask)) : 0.0;
     }
 
     void clear() {
-        win_  = visits_ = 0;
+        visits_.store(0, std::memory_order_relaxed);
+        parent_ = nullptr;
         next_ = {};
     }
 
@@ -110,7 +127,10 @@ double highest_scores(steps<piece_t, Invalid> const & steps,
 
 st_node * build_next(pool<st_node>& alloc, st_node * p, coord const & c) {
     st_node *& x = p->next_[c];
-    if (x == nullptr) x = alloc.get();
+    if (x == nullptr) {
+        x = alloc.get();
+        x->parent_ = p;
+    }
     return x;
 }
 
@@ -161,6 +181,7 @@ public:
         }
         else {
             x = it->second;
+            x->parent_ = nullptr;
             data_->next_.erase(it);
         }
         clear(data_);

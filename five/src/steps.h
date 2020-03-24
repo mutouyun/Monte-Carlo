@@ -24,7 +24,7 @@ public:
     }
 
     unsigned max_size() const noexcept {
-        return datas_.size();
+        return unsigned(datas_.size());
     }
 
     bool set(coord const & c, T const & val) noexcept {
