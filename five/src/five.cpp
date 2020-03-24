@@ -149,7 +149,7 @@ void selection(st_node* curr, board&& b) {
 bool do_calc() {
     run__ = true;
     total__.store(0, std::memory_order_relaxed);
-    job__   = std::thread([] {
+    job__ = std::thread([] {
         while (run__) selection(all__.current(), board(board__));
     });
     for (unsigned cnt = 0; run__; ++cnt) {
@@ -204,7 +204,9 @@ void five_prepare(call_t call, std::size_t limit, std::size_t timeout, void* p) 
 void five_start_game() {
     run__ = false;
     if (job__.joinable()) job__.join();
+    lc_all__.lock();
     all__.clear();
+    lc_all__.unlock();
     board__ = {};
 }
 
