@@ -1,7 +1,7 @@
 #pragma once
 
-#include <unordered_map>
 #include <queue>
+#include <unordered_map>
 #include <tuple>
 #include <cmath>
 #include <cstring>
@@ -9,13 +9,32 @@
 #include "def.h"
 #include "coord.h"
 #include "pool.h"
-#include "board.h"
+#include "steps.h"
+
+struct st_node;
+
+class nodes : public std::unordered_map<coord, st_node*> {
+
+    using base_t = std::unordered_map<coord, st_node*>;
+
+public:
+    using base_t::unordered_map;
+
+    bool set(coord const & c, st_node* val) noexcept {
+        (*this)[c] = val;
+        return true;
+    }
+
+    bool contains(coord const & c) const noexcept {
+        return find(c) != end();
+    }
+};
 
 struct st_node {
 
     std::size_t win_    = 0;
     std::size_t visits_ = 0;
-    std::unordered_map<coord, st_node*> next_;
+    nodes       next_;
 
     void set(bool win) noexcept {
         visits_ += 1;
@@ -31,14 +50,14 @@ struct st_node {
     }
 
     void clear() {
-        win_ = visits_ = 0;
-        next_.clear();
+        win_  = visits_ = 0;
+        next_ = {};
     }
 
     std::tuple<coord, std::size_t> get_best() noexcept {
         std::size_t rt = 0;
         coord rc;
-        for (auto const & it : next_) {
+        for (auto it : next_) {
             std::size_t t = it.second->visits();
             if (rt < t) {
                 rt = t;
@@ -60,7 +79,7 @@ double score(st_node const * p, st_node const * x) noexcept { // UCB
 template <typename C>
 double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept {
     double rs = 0.0;
-    for (auto & it : p->next_) {
+    for (auto it : p->next_) {
         double s = score(p, it.second);
         if (cmp(rs, s)) {
             rs = s;
@@ -71,10 +90,11 @@ double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept {
 }
 
 template <typename Q, typename C>
-double highest_scores(board const & b, st_node const * p, Q& que, C&& cmp) noexcept {
+double highest_scores(steps<piece_t, Invalid> const & steps,
+                      st_node const * p, Q& que, C&& cmp) noexcept {
     double rs = 0.0;
-    for (auto & it : p->next_) {
-        if (b.get(it.first) != Empty) continue;
+    for (auto it : p->next_) {
+        if (steps[it.first] != Empty) continue;
         double s = score(p, it.second);
         if (cmp(rs, s)) {
             rs = s;
@@ -89,7 +109,7 @@ double highest_scores(board const & b, st_node const * p, Q& que, C&& cmp) noexc
 }
 
 st_node * build_next(pool<st_node>& alloc, st_node * p, coord const & c) {
-    st_node*& x = p->next_[c];
+    st_node *& x = p->next_[c];
     if (x == nullptr) x = alloc.get();
     return x;
 }
@@ -107,8 +127,8 @@ class layer {
             st_node* p = que.front();
             que.pop();
             if (p == nullptr) continue;
-            for (auto & it : p->next_) {
-                que.push(it.second);
+            for (unsigned i = 0; i < p->next_.size(); ++i) {
+                que.push(p->next_[i]);
             }
             alloc_.recycle(p);
         } while (!que.empty());

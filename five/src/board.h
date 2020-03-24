@@ -1,17 +1,16 @@
 #pragma once
 
-#include <array>
 #include <deque>
 #include <algorithm>
 #include <cstddef>
 
 #include "def.h"
 #include "coord.h"
+#include "steps.h"
 
 class board {
+    steps<piece_t, Invalid> steps_;
     piece_t next_pie_ = Black;
-    std::size_t set_count_ = 0;
-    std::array<piece_t, board_pts> datas_ {};
     coord urgency_ { 7, 7 };
 
     unsigned get_match(piece_t pie, unsigned d, coord&& x, unsigned cnt, int step) const noexcept {
@@ -110,13 +109,8 @@ class board {
     }
 
 public:
-    bool full() const noexcept {
-        return set_count_ >= datas_.size();
-    }
-
-    bool empty() const noexcept {
-        return set_count_ == 0;
-    }
+    bool full () const noexcept { return steps_.full (); }
+    bool empty() const noexcept { return steps_.empty(); }
 
     piece_t next_pie() const noexcept {
         return next_pie_;
@@ -128,8 +122,8 @@ public:
 
     template <typename F, typename Q>
     void holes(F && check, Q& que) const noexcept {
-        for (unsigned i = 0; i < datas_.size(); ++i) {
-            if ((datas_[i] != Empty) || !check(i)) continue;
+        for (unsigned i = 0; i < steps_.max_size(); ++i) {
+            if ((steps_[i] != Empty) || !check(i)) continue;
             que.push_back(i);
         }
     }
@@ -138,15 +132,15 @@ public:
     void next_steps(F && check, Q& que) const noexcept {
         int min_x = board_size, max_x = 0,
             min_y = board_size, max_y = 0;
-        for (unsigned i = 0; i < datas_.size(); ++i) {
-            if (datas_[i] == Empty) continue;
+        for (unsigned i = 0; i < steps_.max_size(); ++i) {
+            if (steps_[i] == Empty) continue;
             int x = int(coord(i).x()), y = int(coord(i).y());
             if (min_x > x) min_x = x;
             if (max_x < x) max_x = x;
             if (min_y > y) min_y = y;
             if (max_y < y) max_y = y;
         }
-        int delta = (set_count_ == 1) ? 1 : 2;
+        int delta = (steps_.size() == 1) ? 1 : 2;
         min_x = std::max(min_x - delta, 0);
         max_x = std::min(max_x + delta, board_size - 1);
         min_y = std::max(min_y - delta, 0);
@@ -154,18 +148,15 @@ public:
         for (int i = min_x; i <= max_x; ++i) {
             for (int j = min_y; j <= max_y; ++j) {
                 coord c { unsigned(i), unsigned(j) };
-                if ((datas_[c] != Empty) || !check(c)) continue;
+                if ((steps_[c] != Empty) || !check(c)) continue;
                 que.push_back(c);
             }
         }
     }
 
-    void set(coord const & c) {
-        if (!c.valid()) return;
-
-        datas_[c] = next_pie_;
+    void set(coord const & c) noexcept {
+        if (!steps_.set(c, next_pie_)) return;
         next_pie_ = (next_pie_ == White) ? Black : White;
-        ++ set_count_;
 
         static unsigned const list[] = {
             unsigned(direction::up), unsigned(direction::dn),
@@ -181,9 +172,12 @@ public:
         urgency_ = {};
     }
 
-    piece_t get(coord const & c) const {
-        if (!c.valid()) return Invalid;
-        return datas_[c];
+    piece_t get(coord const & c) const noexcept {
+        return steps_[c];
+    }
+
+    steps<piece_t, Invalid> const & get_steps() const noexcept {
+        return steps_;
     }
 
     bool set_and_check(coord const & c) {

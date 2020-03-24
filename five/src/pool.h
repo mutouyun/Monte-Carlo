@@ -20,7 +20,6 @@ public:
         while (!empty()) {
             delete pop();
         }
-        ptrs_.shrink_to_fit();
     }
 
     bool empty() const noexcept {
@@ -56,12 +55,10 @@ public:
             total += others[i].ptrs_.size();
         }
         std::size_t balanced = (total + size - 1) / size;
-        while (!empty()) {
-            for (std::size_t i = 0; i < size; ++i) {
-                if (others[i].ptrs_.size() < balanced) {
-                    others[i].ptrs_.push_back(ptrs_.front());
-                    ptrs_.pop_front();
-                }
+        while (!empty()) for (std::size_t i = 0; i < size; ++i) {
+            if (others[i].ptrs_.size() < balanced) {
+                others[i].ptrs_.push_back(ptrs_.front());
+                ptrs_.pop_front();
             }
         }
     }

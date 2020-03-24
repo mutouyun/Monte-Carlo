@@ -8,13 +8,13 @@ int main(int argc, char *argv[]) {
 
     QGuiApplication app(argc, argv);
 
-    QQmlApplicationEngine engine;
+    QQmlApplicationEngine ui_engine;
     qmlRegisterSingletonType<Engine>("FlatWhite", 1, 0, "Engine", [](QQmlEngine*, QJSEngine*)->QObject* {
         return new Engine;
     });
 
-    engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
-    if (engine.rootObjects().isEmpty())
+    ui_engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+    if (ui_engine.rootObjects().isEmpty())
         return -1;
 
     return app.exec();

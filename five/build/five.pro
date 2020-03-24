@@ -32,10 +32,12 @@ HEADERS += \
         ../include/five.h \
         ../include/five_global.h \
         ../src/def.h \
+        ../src/coord.h \
+        ../src/steps.h \
         ../src/layer.h \
         ../src/board.h \
-        ../src/coord.h \
-        ../src/pool.h
+        ../src/pool.h \
+        ../src/async.h
 
 SOURCES += \
         ../src/five.cpp
