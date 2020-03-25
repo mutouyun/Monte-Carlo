@@ -94,9 +94,11 @@ double score(st_node const * p, st_node const * x) noexcept { // UCB
 }
 
 template <typename C>
-double highest_score(st_node const * p, coord& rc, C&& cmp) noexcept {
+double highest_score(steps<piece_t, Invalid> const & steps, 
+                     st_node const * p, coord& rc, C&& cmp) noexcept {
     double rs = 0.0;
     for (auto it : p->next_) {
+        if (steps[it.first] != Empty) continue;
         double s = score(p, it.second);
         if (cmp(rs, s)) {
             rs = s;

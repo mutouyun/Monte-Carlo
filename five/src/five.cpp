@@ -115,8 +115,8 @@ void selection(st_node* curr, board&& b) {
         }, list);
 
         if (list.empty()) {
-            highest_scores(b.get_steps(), curr, list, [](double a, double b) { return a < b; });
-            if (set_and_check(list[random(0, list.size())])) {
+            highest_score(b.get_steps(), curr, u, [](double a, double b) { return a < b; });
+            if (set_and_check(u)) {
                 break;
             }
             else continue;
