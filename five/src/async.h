@@ -49,6 +49,7 @@ public:
         for (std::size_t i = 0; i < concurrency_; ++i) {
             if (procs_[i].joinable()) procs_[i].join();
         }
+        delete [] procs_;
     }
 
     template <typename F>

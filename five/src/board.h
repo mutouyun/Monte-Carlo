@@ -173,7 +173,7 @@ public:
     }
 
     piece_t get(coord const & c) const noexcept {
-        return steps_[c];
+        return steps_.get(c);
     }
 
     steps<piece_t, Invalid> const & get_steps() const noexcept {
