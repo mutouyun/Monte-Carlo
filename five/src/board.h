@@ -1,5 +1,6 @@
 #pragma once
 
+#include <set>
 #include <deque>
 #include <algorithm>
 #include <cstddef>
@@ -11,7 +12,7 @@
 class board {
     steps<piece_t, Invalid> steps_;
     piece_t next_pie_ = Black;
-    coord urgency_ { 7, 7 };
+    std::set<coord> urgencies_ { { 7, 7 } };
 
     unsigned get_match(piece_t pie, unsigned d, coord&& x, unsigned cnt, int step) const noexcept {
         unsigned k = 0;
@@ -22,7 +23,103 @@ class board {
         return k;
     }
 
-    // "xxxx_", "xxx_x", "xx_xx", "x_xxx", "_xxxx"
+    /*
+     * "_xxx__", "_xx_x__", "__xx_x_", 
+     * "__xxx_", "__x_xx_", "_x_xx__"
+    */
+    std::deque<coord> warning(coord const & c, unsigned d) const noexcept {
+        piece_t const pie = get(c);
+        auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
+            return this->get_match(pie, d, std::move(x), cnt, step);
+        };
+
+        coord x = c;
+        unsigned l = get_match(std::move(x), 3);
+        if (get(x) == Empty) switch (l) {
+        case 0: { // ????c_?
+                coord e = x.next(d);
+                if (get(e) == Empty) {
+                    // ???c__
+                    l = get_match(std::move(e = c), 3, -1);
+                    if (get(e) == Empty) {
+                        if (l == 2) {
+                            // _xxc__
+                            return { e, x };
+                        }
+                        else if (l == 0) {
+                            // ???_c__
+                            coord f = e;
+                            if ((get_match(std::move(f), 3, -1) == 2) && (get(f) == Empty)) {
+                                // _xx_c__
+                                return { f, e, x };
+                            }
+                        }
+                    }
+                }
+                else if (get(e) == pie) {
+                    // ???c_x??
+                    coord e = e.next(d);
+                    if (get(e) == Empty) {
+                        // ???c_x_?
+                        coord f = c;
+                        if ((get_match(std::move(f), 2, -1) == 1) && (get(f) == Empty)) {
+                            // ?_xc_x_?
+                            if (get(e.next(d)) == Empty) {
+                                // _xc_x__
+                                return { f, e, x };
+                            }
+                            else if (get(f.next(d, -1)) == Empty) {
+                                // __xc_x_
+                                return { f, e, x };
+                            }
+                        }
+                    }
+                }
+            }
+            break;
+        case 1: { // ???cx_??
+                coord e = x.next(d);
+                if (get(e) == Empty) {
+                    // ??cx__
+                    if ((get_match(std::move(e = c), 2, -1) == 1) &&
+                        (get(e) == Empty)) {
+                        // _xcx__
+                        return { e, x };
+                    }
+                }
+                else if (get(e) == pie) {
+                    // ?cx_x??
+                    e = x.next(d, 2);
+                    coord f = c.next(d, -1);
+                    if ((get(e) == Empty) && (get(f) == Empty)) {
+                        // ?_cx_x_?
+                        if ((get(e.next(d)) == Empty) || (get(f.next(d, -1)) == Empty)) {
+                            // _cx_x__, __cx_x_
+                            return { f, e, x };
+                        }
+                    }
+                }
+            }
+            break;
+        case 2: { // ?cxx_?
+                coord e = c.next(d, -1);
+                if ((get(e) == Empty) && 
+                    (get(x.next(d)) == Empty)) {
+                    // _cxx__
+                    return { e, x };
+                }
+            }
+            break;
+        default:
+            break;
+        }
+        return {};
+    }
+
+    /* 
+     * "xxxx_", "xxx_x", "xx_xx", 
+     * "_xxxx", "x_xxx"
+    */
     coord urgent(coord const & c, unsigned d) const noexcept {
         piece_t const pie = get(c);
         auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
@@ -63,7 +160,10 @@ class board {
         else return {};
     }
 
-    // "xxxxx", "_xxxx__", "__xxxx_"
+    /*
+     * "xxxxx", "_xxxx__", 
+     *          "__xxxx_"
+    */
     bool over(coord const & c, unsigned d) const noexcept {
         piece_t const pie = get(c);
         auto const get_match = [this, pie, d](coord&& x, unsigned cnt, int step = 1) {
@@ -116,8 +216,8 @@ public:
         return next_pie_;
     }
 
-    coord get_urgency() const noexcept {
-        return urgency_;
+    auto const & get_urgency() const noexcept {
+        return urgencies_;
     }
 
     template <typename F, typename Q>
@@ -165,11 +265,14 @@ public:
             direction::up | direction::ri, direction::dn | direction::le
         };
 
+        urgencies_.clear();
         for (auto d : list) {
             coord x = urgent(c, d);
-            if (x.valid()) { urgency_ = x; return; }
+            if (x.valid()) urgencies_.insert(x);
+            //else for (coord x : warning(c, d)) {
+            //    urgencies_.insert(x);
+            //}
         }
-        urgency_ = {};
     }
 
     piece_t get(coord const & c) const noexcept {

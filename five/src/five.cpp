@@ -44,17 +44,15 @@ bool simulation(board& b, coord na) {
     unsigned k = 0;
 
     for (std::deque<coord> list;
-        !(win = b.set_and_check(na)) && !b.full();
-        ++k, list.clear()) {
+         !(win = b.set_and_check(na)) && !b.full();
+         ++k, list.clear()) {
 
-        coord u = b.get_urgency();
-        if (u.valid()) {
-            na = u;
+        auto const & u = b.get_urgency();
+        if (!u.empty()) {
+            for (coord c : u) list.push_back(c);
         }
-        else {
-            b.next_steps([](coord const &) { return true; }, list);
-            na = list[random(0, list.size())];
-        }
+        else b.next_steps([](coord const &) { return true; }, list);
+        na = list[random(0, list.size())];
     }
 
     total__.fetch_add(1, std::memory_order_relaxed);
@@ -97,15 +95,9 @@ void selection(st_node* curr, board&& b) {
     };
 
     for (std::deque<coord> list;; list.clear()) {
-        coord u = b.get_urgency();
-        if (u.valid()) {
-            if (!curr->next_.contains(u)) {
-                list.push_back(u);
-            }
-            else if (set_and_check(u)) {
-                break;
-            }
-            else continue;
+        auto const & u = b.get_urgency();
+        if (!u.empty()) for (coord c : u) {
+            if (!curr->next_.contains(c)) list.push_back(c);
         }
         else if (curr->next_.empty()) {
             b.next_steps([](coord const &) { return true; }, list);
@@ -115,8 +107,9 @@ void selection(st_node* curr, board&& b) {
         }, list);
 
         if (list.empty()) {
-            highest_score(b.get_steps(), curr, u, [](double a, double b) { return a < b; });
-            if (set_and_check(u)) {
+            coord c { 7, 7 };
+            highest_score(b.get_steps(), curr, c, [](double a, double b) { return a < b; });
+            if (set_and_check(c)) {
                 break;
             }
             else continue;
